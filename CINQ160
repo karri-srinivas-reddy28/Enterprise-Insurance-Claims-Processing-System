@@ -1,0 +1,83 @@
+         IDENTIFICATION DIVISION.                                       00010000
+         PROGRAM-ID. CINQ160.                                           00020000
+         ENVIRONMENT DIVISION.                                          00030000
+         DATA DIVISION.                                                 00040000
+         WORKING-STORAGE SECTION.                                       00050000
+         COPY INS160M.                                                  00060000
+         COPY DFHAID.                                                   00070000
+                   EXEC SQL                                             00080000
+                       INCLUDE SQLCA                                    00090000
+                   END-EXEC.                                            00100000
+                   EXEC SQL                                             00110000
+                       INCLUDE AUDIT160                                 00120000
+                   END-EXEC.                                            00130000
+         77 WS-COMMAREA PIC X(2).                                       00140011
+         01 WS-MSG    PIC X(60).                                        00211005
+         LINKAGE SECTION.                                               00220000
+         01 DFHCOMMAREA  PIC X(2).                                      00230006
+         PROCEDURE DIVISION.                                            00240006
+         MAIN-PARA.                                                     00250000
+                IF EIBCALEN = 0                                         00260000
+                   PERFORM PARA-1                                       00270001
+                ELSE                                                    00280000
+                   PERFORM PARA-2                                       00290000
+                END-IF.                                                 00300006
+         PARA-1.                                                        00310000
+              MOVE LOW-VALUES TO ENQ160O                                00311011
+               EXEC CICS                                                00320000
+                     SEND MAP('ENQ160')                                 00330000
+                       MAPSET('INS160M')                                00340000
+                       CURSOR                                           00351004
+                       ERASE                                            00352007
+               END-EXEC.                                                00360004
+         PARA-2.                                                        00420000
+               IF EIBAID = DFHPF3                                       00420606
+                   EXEC CICS XCTL                                       00420706
+                        PROGRAM('MAIN160')                              00420806
+                   END-EXEC                                             00420906
+               END-IF.                                                  00421006
+               EXEC CICS                                                00421104
+                    RECEIVE MAP('ENQ160')                               00421204
+                       MAPSET('INS160M')                                00421304
+              END-EXEC.                                                 00421407
+                IF EIBAID = DFHPF3                                      00421512
+                    EXEC CICS  RETURN                                   00421612
+                    END-EXEC                                            00421712
+                END-IF.                                                 00421812
+                MOVE UCLAMDI TO CLAIM-NO.                               00421912
+                EXEC SQL                                                00422012
+                      SELECT POLICY_NO,                                 00422112
+                             CLAIM_AMOUNT,                              00422212
+                             RESULT,                                    00422312
+                             REASON                                     00422412
+                       INTO :POLICY-NO,                                 00423012
+                            :CLAIM-AMOUNT,                              00424012
+                            :RESULT,                                    00425012
+                            :REASON                                     00426012
+                       FROM AUDIT160                                    00427012
+                       WHERE CLAIM_NO=:CLAIM-NO                         00428012
+                END-EXEC.                                               00429012
+                   EVALUATE SQLCODE                                     00430012
+                     WHEN 0                                             00440012
+                         MOVE POLICY-NO TO POLCNO                       00450012
+                         MOVE CLAIM-AMOUNT TO CAMTO                     00460012
+                         MOVE RESULT TO CSTATO                          00470012
+                         MOVE REASON TO CRGNO                           00480012
+                         MOVE 'RECORD FOUND' TO PMSG2O                  00490012
+                     WHEN 100                                           00500012
+                         MOVE LOW-VALUES TO ENQ160I                     00501012
+                         MOVE 'NOT FOUND' TO PMSG2O                     00510012
+                     WHEN OTHER                                         00520012
+                         MOVE SQLCODE TO PMSG2O                         00530012
+                     END-EVALUATE.                                      00540012
+                        EXEC CICS                                       00550012
+                            SEND MAP('ENQ160')                          00560012
+                             MAPSET('INS160M')                          00570012
+                             CURSOR                                     00580012
+                         END-EXEC.                                      00590012
+                         EXEC CICS                                      00600012
+                              RETURN                                    00610012
+                              TRANSID('6019')                           00620012
+                              COMMAREA(WS-COMMAREA)                     00630012
+                         END-EXEC.                                      00640012
+
