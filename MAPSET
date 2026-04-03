@@ -1,0 +1,75 @@
+INS160M DFHMSD TYPE=&SYSPARM,MODE=INOUT,LANG=COBOL,                    X00010003
+               CTRL=(FREEKB,ALARM),STORAGE=AUTO,TIOAPFX=YES,           X00020000
+               MAPATTS=(COLOR,HILIGHT),DSATTS=(COLOR,HILIGHT)           00030000
+MIN160  DFHMDI SIZE=(24,80),LINE=1,COLUMN=1                             00040000
+TITLE   DFHMDF POS=(2,20),LENGTH=34,ATTRB=(NORM,PROT),                 X00050000
+               INITIAL='ENTERPRISE INSURANCE CLAIMS SYSTEM'             00060000
+OPT1    DFHMDF POS=(6,10),LENGTH=30,ATTRB=(PROT),                      X00070000
+               INITIAL='1.ENTER NEW CLAIM'                              00080000
+OPT2    DFHMDF POS=(7,10),LENGTH=30,ATTRB=(PROT),                      X00090000
+               INITIAL='2.VIEW CLAIM'                                   00100000
+OPT3    DFHMDF POS=(8,10),LENGTH=30,ATTRB=(PROT),                      X00110000
+               INITIAL='3.GENERATE REPORTS'                             00120001
+OPT4    DFHMDF POS=(9,10),LENGTH=30,ATTRB=(PROT),                      X00130000
+               INITIAL='4.POLICY INQUIRY'                               00140000
+OPT5    DFHMDF POS=(10,10),LENGTH=30,ATTRB=(PROT),                     X00150000
+               INITIAL='5.EXIT'                                         00160000
+PMSG    DFHMDF POS=(18,10),LENGTH=20,ATTRB=(PROT),                     X00170005
+               INITIAL='OPTION ='                                       00180000
+UOPT    DFHMDF POS=(18,35),LENGTH=1,ATTRB=(UNPROT,IC),                 X00181005
+               INITIAL='_'                                              00182001
+ENR160  DFHMDI SIZE=(24,80),LINE=1,COLUMN=1                             00190001
+TITLE1  DFHMDF POS=(2,10),LENGTH=17,ATTRB=(PROT),                      X00200003
+               INITIAL='CLAIM ENTRY PANEL'                              00210001
+CLMIDL  DFHMDF POS=(5,10),LENGTH=9,ATTRB=(PROT),                       X00211003
+               INITIAL='CLAIM ID'                                       00212001
+UCLMID  DFHMDF POS=(5,25),LENGTH=10,ATTRB=(UNPROT,IC),                 X00220006
+               INITIAL=' '                                              00230001
+PLCYNL  DFHMDF POS=(7,10),LENGTH=15,ATTRB=(PROT),                      X00240002
+               INITIAL='POLICY NO:'                                     00250002
+UPLCYN  DFHMDF POS=(7,27),LENGTH=10,ATTRB=(UNPROT),                    X00260003
+               INITIAL=' '                                              00270002
+AMTL    DFHMDF POS=(9,10),LENGTH=10,ATTRB=(PROT),                      X00280002
+               INITIAL='AMOUNT :'                                       00290002
+UAMT    DFHMDF POS=(9,25),LENGTH=10,ATTRB=(UNPROT),                    X00300002
+               INITIAL=' '                                              00310002
+STATL   DFHMDF POS=(11,10),LENGTH=10,ATTRB=(PROT),                     X00320002
+               INITIAL='STATUS :'                                       00330002
+USTAT   DFHMDF POS=(11,25),LENGTH=10,ATTRB=(UNPROT),                   X00340002
+               INITIAL=' '                                              00350002
+PMSG1   DFHMDF POS=(20,10),LENGTH=50,ATTRB=(PROT)                       00360002
+ENQ160  DFHMDI SIZE=(24,80),LINE=1,COLUMN=1                             00370002
+TITLE2  DFHMDF POS=(2,25),LENGTH=25,ATTRB=(PROT,BRT),                  X00380002
+               INITIAL='CLAIM INQUIRY SCREEN'                           00381002
+CLAMDL  DFHMDF POS=(5,10),LENGTH=16,ATTRB=(PROT),                      X00390002
+               INITIAL='ENTER CLAIM ID:'                                00400003
+UCLAMD  DFHMDF POS=(5,30),LENGTH=10,ATTRB=(UNPROT,IC),                 X00410002
+               INITIAL=' '                                              00411002
+POLCNL  DFHMDF POS=(8,10),LENGTH=11,ATTRB=(PROT),                      X00420003
+               INITIAL='POLICY NO:'                                     00430002
+POLCN   DFHMDF POS=(8,30),LENGTH=10,ATTRB=(PROT)                        00440003
+CLMDTL  DFHMDF POS=(10,10),LENGTH=12,ATTRB=(PROT),                     X00450003
+               INITIAL='CLAIM DATE:'                                    00460002
+CLAMDT  DFHMDF POS=(10,30),LENGTH=8,ATTRB=(PROT)                        00470006
+CAMTL   DFHMDF POS=(12,10),LENGTH=10,ATTRB=(PROT),                     X00480007
+               INITIAL='AMOUNT :'                                       00490002
+CAMT    DFHMDF POS=(12,30),LENGTH=10,ATTRB=(PROT),PICOUT='ZZZZZZZ.99'   00500008
+CSTATL  DFHMDF POS=(14,10),LENGTH=8,ATTRB=(PROT),                      X00510002
+               INITIAL='STATUS :'                                       00511002
+CSTAT   DFHMDF POS=(14,30),LENGTH=10,ATTRB=(PROT)                       00520007
+CRGNL   DFHMDF POS=(16,10),LENGTH=10,ATTRB=(PROT),                     X00530002
+               INITIAL='REGION :'                                       00540002
+CRGN    DFHMDF POS=(16,30),LENGTH=10,ATTRB=(PROT)                       00550002
+PMSG2   DFHMDF POS=(20,10),LENGTH=50,ATTRB=(PROT)                       00560002
+        DFHMDF POS=(22,10),LENGTH=10,ATTRB=(PROT),                     X00570002
+               INITIAL='F3=EXIT'                                        00580003
+        DFHMDF POS=(22,21),LENGTH=10,ATTRB=(PROT),                     X00590002
+               INITIAL='F5=NEXT CLAIM'                                  00600003
+REPRTM  DFHMDI SIZE=(24,80),LINE=1,COLUMN=1                             00601010
+DISP    DFHMDF POS=(12,30),LENGTH=20,ATTRB=(PROT,BRT),                 X00602009
+               INITIAL='REPORT GENERATED'                               00603009
+RPTSUB  DFHMDF POS=(18,28),LENGTH=30,ATTRB=(PROT),                     X00604009
+               INITIAL='PRESS ENTER TO CONTINUE'                        00605009
+        DFHMSD TYPE=FINAL                                               00610002
+        END                                                             00620002
+
