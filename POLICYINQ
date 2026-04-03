@@ -1,0 +1,83 @@
+         IDENTIFICATION DIVISION.                                       00010000
+         PROGRAM-ID. PINQ160.                                           00020001
+         ENVIRONMENT DIVISION.                                          00030000
+         DATA DIVISION.                                                 00040000
+         WORKING-STORAGE SECTION.                                       00050000
+         COPY INS160M.                                                  00060000
+         COPY DFHAID.                                                   00070000
+                   EXEC SQL                                             00080000
+                       INCLUDE SQLCA                                    00090000
+                   END-EXEC.                                            00100000
+                   EXEC SQL                                             00110000
+                       INCLUDE POLCY160                                 00120001
+                   END-EXEC.                                            00130000
+         77 WS-COMMAREA PIC X(2).                                       00140000
+         01 WS-MSG    PIC X(60).                                        00211000
+         LINKAGE SECTION.                                               00220000
+         01 DFHCOMMAREA  PIC X(2).                                      00230000
+         PROCEDURE DIVISION.                                            00240000
+         MAIN-PARA.                                                     00250000
+                IF EIBCALEN = 0                                         00260000
+                   PERFORM PARA-1                                       00270000
+                ELSE                                                    00280000
+                   PERFORM PARA-2                                       00290000
+                END-IF.                                                 00300000
+         PARA-1.                                                        00310000
+              MOVE LOW-VALUES TO ENQ160O                                00311000
+               EXEC CICS                                                00320000
+                     SEND MAP('ENQ160')                                 00330000
+                       MAPSET('INS160M')                                00340000
+                       CURSOR                                           00351000
+                       ERASE                                            00352000
+               END-EXEC.                                                00360000
+         PARA-2.                                                        00420000
+               IF EIBAID = DFHPF3                                       00420600
+                   EXEC CICS XCTL                                       00420700
+                        PROGRAM('MAIN160')                              00420800
+                   END-EXEC                                             00420900
+               END-IF.                                                  00421000
+               EXEC CICS                                                00421100
+                    RECEIVE MAP('ENQ160')                               00421200
+                       MAPSET('INS160M')                                00421300
+              END-EXEC.                                                 00421400
+                IF EIBAID = DFHPF3                                      00421500
+                    EXEC CICS  RETURN                                   00421600
+                    END-EXEC                                            00421700
+                END-IF.                                                 00421800
+                MOVE POLCNI TO POLICY-NO.                               00421901
+                EXEC SQL                                                00422000
+                      SELECT CUST_NAME,                                 00422101
+                             COVERAGE_TYPE,                             00422201
+                             COVERAGE_LIMIT,                            00422301
+                             PSTATUS                                    00422401
+                       INTO :CUST-NAME,                                 00423001
+                            :COVERAGE-TYPE,                             00424001
+                            :COVERAGE-LIMIT,                            00425001
+                            :PSTATUS                                    00426001
+                       FROM POLCY160                                    00427001
+                       WHERE POLICY_NO=:POLICY-NO                       00428001
+                END-EXEC.                                               00429000
+                   EVALUATE SQLCODE                                     00430000
+                     WHEN 0                                             00440000
+                         MOVE CUST-NAME TO CLAMDTO                      00450001
+                         MOVE COVERAGE-TYPE TO CTYPEO                   00460001
+                         MOVE COVERAGE-LIMIT TO CAMTO                   00470001
+                         MOVE PSTATUS TO CSTATO                         00480001
+                         MOVE 'RECORD FOUND' TO PMSG2O                  00490000
+                     WHEN 100                                           00500000
+                         MOVE LOW-VALUES TO ENQ160I                     00501000
+                         MOVE 'NOT FOUND' TO PMSG2O                     00510000
+                     WHEN OTHER                                         00520000
+                         MOVE SQLCODE TO PMSG2O                         00530000
+                     END-EVALUATE.                                      00540000
+                        EXEC CICS                                       00550000
+                            SEND MAP('ENQ160')                          00560000
+                             MAPSET('INS160M')                          00570000
+                             CURSOR                                     00580000
+                         END-EXEC.                                      00590000
+                         EXEC CICS                                      00600000
+                              RETURN                                    00610000
+                              TRANSID('6060')                           00620001
+                              COMMAREA(WS-COMMAREA)                     00630000
+                         END-EXEC.                                      00640000
+
