@@ -1,0 +1,132 @@
+         IDENTIFICATION DIVISION.                                       00010000
+         PROGRAM-ID. CLM160.                                            00020000
+         ENVIRONMENT DIVISION.                                          00030000
+         INPUT-OUTPUT SECTION.                                          00040000
+         FILE-CONTROL.                                                  00050000
+                SELECT CLAIMFILE ASSIGN TO CLAIMIN                      00060000
+                ORGANIZATION IS INDEXED                                 00070003
+                ACCESS MODE IS SEQUENTIAL                               00080000
+                RECORD KEY IS FD-CLAIM-NO                               00090005
+                FILE STATUS IS WS-ERR.                                  00091003
+         DATA DIVISION.                                                 00100000
+         FILE SECTION.                                                  00110000
+         FD CLAIMFILE.                                                  00120000
+         01 FD-CLAIM-REC.                                               00130002
+                 05 FD-CLAIM-NO    PIC X(10).                           00140011
+                 05 FD-FILLER     PIC X(1).                             00141014
+                 05 FD-POLICY-NO   PIC X(10).                           00150011
+                 05 FD-FILLER    PIC X(1).                              00151014
+                 05 FD-CLAIM-DATE  PIC X(8).                            00160011
+                 05 FD-FILLER    PIC X(3).                              00161014
+                 05 FD-CLAIM-TYPE  PIC X(2).                            00170011
+                 05 FD-FILLER     PIC X(8).                             00171016
+                 05 FD-CLAIM-AMOUNT PIC 9(7).                           00180016
+                 05 FD-FILLER     PIC X(6).                             00181016
+                 05 FD-CLAIM-PSTATUS PIC X(1).                          00190011
+                 05 FD-FILLER       PIC X(23).                          00191016
+         WORKING-STORAGE SECTION.                                       00200000
+               EXEC SQL                                                 00210000
+                   INCLUDE SQLCA                                        00220001
+               END-EXEC.                                                00230000
+               EXEC SQL                                                 00240000
+                   INCLUDE POLCY160                                     00250001
+               END-EXEC.                                                00260000
+               EXEC SQL                                                 00270000
+                    INCLUDE AUDIT160                                    00280001
+               END-EXEC.                                                00290000
+         01 WS-END    PIC X VALUE 'N'.                                  00300000
+         01 WS-ERR    PIC X(2).                                         00301003
+         01 WS-RESULT  PIC X(10).                                       00310000
+         01 WS-REASON  PIC X(30).                                       00320000
+         01 WS-POLICY-NO        PIC X(10).                              00321005
+         01 WS-PSTATUS           PIC X(1).                              00330005
+         01 WS-COVERAGE-LIMIT   PIC S9(7)V9(2) COMP-3.                  00340007
+         01 WS-BALANCE          PIC S9(9) COMP-3.                       00350015
+         01 WS-CLAIM-AMT-DEC   PIC S9(8)V9(2) COMP-3.                   00350115
+         PROCEDURE DIVISION.                                            00350205
+                  OPEN INPUT CLAIMFILE                                  00350305
+                  IF WS-ERR  = '00'                                     00351010
+                      DISPLAY 'FILE OPEN '                              00352010
+                  ELSE                                                  00353010
+                      DISPLAY 'FILE OPEN ERR', WS-ERR                   00353110
+                  END-IF.                                               00354010
+                  PERFORM UNTIL WS-END = 'Y'                            00360000
+                     READ CLAIMFILE                                     00370000
+                          AT END                                        00380000
+                            DISPLAY ' AT END'                           00381010
+                              MOVE 'Y' TO WS-END                        00390000
+                          NOT AT END                                    00400000
+                              DISPLAY 'READ SUCCESS: '                  00401010
+                              PERFORM PROCESS-CLAIM                     00410000
+                     END-READ                                           00420000
+                  END-PERFORM                                           00430000
+                  CLOSE CLAIMFILE                                       00440000
+                  STOP RUN.                                             00450000
+         PROCESS-CLAIM.                                                 00460000
+               MOVE FD-CLAIM-NO TO CLAIM-NO                             00460116
+               MOVE FD-CLAIM-AMOUNT TO WS-CLAIM-AMT-DEC                 00460215
+               MOVE FD-POLICY-NO TO WS-POLICY-NO                        00461005
+               DISPLAY 'PROCESSING: ', FD-CLAIM-NO                      00462010
+               EXEC SQL                                                 00470000
+                   SELECT PSTATUS, COVERAGE_LIMIT, BALANCE              00480016
+                   INTO :WS-PSTATUS,                                    00490005
+                        :WS-COVERAGE-LIMIT,                             00491005
+                        :WS-BALANCE                                     00492005
+                   FROM POLCY160                                        00500005
+                   WHERE POLICY_NO = :WS-POLICY-NO                      00510005
+               END-EXEC.                                                00520000
+                 MOVE FD-CLAIM-NO TO CLAIM-NO                           00521016
+                 MOVE FD-POLICY-NO TO WS-POLICY-NO                      00522016
+                 MOVE FD-CLAIM-TYPE TO CLAIM-TYPE                       00523016
+                 MOVE FD-CLAIM-AMOUNT TO CLAIM-AMOUNT                   00524016
+                 MOVE WS-RESULT TO RESULT                               00525016
+                 MOVE WS-REASON TO REASON                               00526016
+                 MOVE SPACES TO WS-RESULT                               00527017
+                 MOVE SPACES TO WS-REASON                               00528017
+               IF SQLCODE = 100                                         00530016
+                       DISPLAY 'POLICY NOT FOUND: ' WS-POLICY-NO        00540005
+               ELSE IF WS-PSTATUS = 'I'                                 00570016
+                   DISPLAY  'INSIDE I BLOCK'                            00571016
+                    MOVE 'REJECTED' TO WS-RESULT                        00580011
+                    MOVE 'POLICY INACTIVE' TO WS-REASON                 00590011
+               ELSE IF WS-CLAIM-AMT-DEC > WS-COVERAGE-LIMIT             00600015
+                   MOVE 'REJECTED' TO WS-RESULT                         00610003
+                   MOVE 'OVER LIMIT' TO WS-REASON                       00620000
+               ELSE                                                     00630000
+                  MOVE 'APPROVED' TO WS-RESULT                          00640000
+                  MOVE 'WITHIN LIMIT' TO WS-REASON                      00650003
+                  COMPUTE WS-BALANCE = WS-BALANCE - WS-CLAIM-AMT-DEC    00660015
+                                                                        00660116
+                 IF WS-RESULT = 'APPROVED'                              00662017
+                  EXEC SQL                                              00670000
+                       UPDATE POLCY160                                  00680005
+                       SET BALANCE = :WS-BALANCE                        00690005
+                       WHERE POLICY_NO = :WS-POLICY-NO                  00700005
+                  END-EXEC                                              00710000
+                 DISPLAY 'INSERTING CLAIM:', CLAIM-NO                   00711016
+                  IF SQLCODE NOT = 0                                    00720000
+                         DISPLAY 'UPDATE ERROR:', SQLCODE               00730000
+                  END-IF                                                00740016
+               END-IF.                                                  00750017
+                 DISPLAY CLAIM-NO WS-POLICY-NO CLAIM-TYPE RESULT REASON 00760017
+                 EXEC SQL                                               00820000
+                      INSERT INTO AUDIT160                              00830000
+                      VALUES (:CLAIM-NO,                                00840005
+                              :WS-POLICY-NO,                            00850010
+                              :CLAIM-TYPE,                              00860005
+                              :WS-CLAIM-AMT-DEC,                        00870016
+                              :WS-RESULT,                               00880016
+                              :WS-REASON)                               00890016
+                 END-EXEC.                                              00900000
+                 DISPLAY 'INSERT SQLCODE:', SQLCODE                     00900117
+                 EXEC SQL                                               00901005
+                     COMMIT                                             00902005
+                 END-EXEC.                                              00903005
+                 IF SQLCODE = -803                                      00910000
+                       DISPLAY 'DUPLICATE CLAIM:', CLAIM-NO             00920000
+                 ELSE IF SQLCODE NOT = 0                                00930000
+                       DISPLAY 'INSERET ERROR:', SQLCODE                00940000
+                 END-IF.                                                00950000
+         END-PARA.                                                      00960000
+                 EXIT.                                                  00970000
+
