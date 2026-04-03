@@ -1,0 +1,63 @@
+         IDENTIFICATION DIVISION.                                       00010000
+         PROGRAM-ID. CPYDT160.                                          00020000
+         ENVIRONMENT DIVISION.                                          00030000
+         INPUT-OUTPUT SECTION.                                          00040000
+         FILE-CONTROL.                                                  00050001
+                  SELECT OUTFILE ASSIGN TO OUTDD                        00060000
+                  ORGANIZATION IS SEQUENTIAL.                           00070001
+         DATA DIVISION.                                                 00080000
+         FILE SECTION.                                                  00090000
+         FD OUTFILE                                                     00100001
+            RECORDING MODE IS F.                                        00101001
+         01 OUT-REC   PIC X(80).                                        00110001
+         WORKING-STORAGE SECTION.                                       00120000
+               EXEC SQL                                                 00130000
+                   INCLUDE SQLCA                                        00140000
+               END-EXEC.                                                00150000
+               EXEC SQL                                                 00151001
+                   INCLUDE AUDIT160                                     00152001
+               END-EXEC.                                                00153001
+               EXEC SQL DECLARE AUD-CUR CURSOR FOR                      00160001
+                       SELECT CLAIM_NO,                                 00170000
+                              POLICY_NO,                                00180000
+                              CLAIM_TYPE,                               00190000
+                              CLAIM_AMOUNT,                             00200000
+                              RESULT,                                   00210000
+                              REASON                                    00220000
+                        FROM AUDIT160                                   00230000
+               END-EXEC.                                                00240000
+         01 WS-CLAIM-NO   PIC X(10).                                    00250000
+         01 WS-POLICY-NO  PIC X(10).                                    00260000
+         01 WS-TYPE       PIC X(2).                                     00270000
+         01 WS-AMOUNT     PIC S9(8)V99 COMP-3.                          00280001
+         01 WS-AMOUNT-DISP PIC Z(8).99.                                 00281001
+         01 WS-RESULT     PIC X(10).                                    00290000
+         01 WS-REASON     PIC X(20).                                    00300000
+         PROCEDURE DIVISION.                                            00310000
+                OPEN OUTPUT OUTFILE.                                    00320000
+                EXEC SQL OPEN AUD-CUR END-EXEC                          00330001
+                 PERFORM UNTIL SQLCODE = 100                            00340000
+                     EXEC SQL                                           00350000
+                          FETCH AUD-CUR INTO                            00360000
+                          :WS-CLAIM-NO,                                 00370000
+                          :WS-POLICY-NO,                                00380000
+                          :WS-TYPE,                                     00390000
+                          :WS-AMOUNT,                                   00400000
+                          :WS-RESULT,                                   00410001
+                          :WS-REASON                                    00420000
+                      END-EXEC                                          00430000
+                      IF SQLCODE NOT = 100                              00440000
+                           MOVE WS-AMOUNT TO WS-AMOUNT-DISP             00441001
+                          STRING WS-CLAIM-NO DELIMITED BY SPACE         00450000
+                                 WS-POLICY-NO DELIMITED BY SPACE        00460001
+                                 WS-TYPE DELIMITED BY SPACE             00470000
+                                 WS-AMOUNT-DISP DELIMITED BY SPACE      00480001
+                                 WS-RESULT DELIMITED BY SPACE           00490001
+                                 WS-REASON DELIMITED BY SIZE            00500001
+                                 INTO OUT-REC                           00510000
+                           WRITE OUT-REC                                00520000
+                      END-IF                                            00530000
+                    END-PERFORM.                                        00540000
+                    CLOSE OUTFILE.                                      00550000
+                    STOP RUN.                                           00560000
+
