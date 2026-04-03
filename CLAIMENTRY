@@ -1,0 +1,75 @@
+         IDENTIFICATION DIVISION.                                       00010000
+         PROGRAM-ID. ETRY160.                                           00020000
+         DATA DIVISION.                                                 00030000
+         WORKING-STORAGE SECTION.                                       00040000
+         COPY DFHAID.                                                   00041004
+         COPY DFHBMSCA.                                                 00042007
+         COPY INS160M.                                                  00043004
+         77 WS-COMMAREA   PIC 9(2) VALUE 0.                             00044008
+         01 WS-CLAIM-REC.                                               00045008
+              05 WS-CLAIM-NO  PIC X(10).                                00046008
+              05 WS-FILLER    PIC X(1).                                 00047008
+              05 WS-POLICY-NO  PIC X(10).                               00048008
+              05 WS-FILLER   PIC X(1).                                  00049008
+              05 WS-CLAIM-DATE PIC X(8).                                00050008
+              05 WS-FILLER  PIC X(3).                                   00060008
+              05 WS-CLAIM-TYPE PIC X(2).                                00070008
+              05 WS-FILLER  PIC X(8).                                   00080008
+              05 WS-CLAIM-AMOUNT PIC 9(7).                              00090008
+              05 WS-FILLER  PIC X(6).                                   00100008
+              05 WS-CLAIM-PSTATUS  PIC X(1).                            00110008
+              05 WS-FILLER PIC X(23).                                   00120008
+         LINKAGE SECTION.                                               00200004
+         01 DFHCOMMAREA PIC X(1).                                       00210007
+         PROCEDURE DIVISION USING  DFHCOMMAREA.                         00230008
+         MAIN-PARA.                                                     00230108
+               IF EIBCALEN = 0                                          00230208
+                   PERFORM SEND-SCREEN                                  00230308
+               ELSE                                                     00230408
+                  PERFORM PROCESS-SCREEN                                00230508
+               END-IF.                                                  00230608
+         SEND-SCREEN.                                                   00230808
+                 MOVE LOW-VALUES TO ENR160O                             00237008
+                 MOVE -1 TO UCLMIDL                                     00238008
+                  EXEC CICS                                             00240007
+                        SEND MAP('ENR160')                              00250007
+                        MAPSET('INS160M')                               00260007
+                        FROM(ENR160O)                                   00270007
+                        ERASE                                           00280007
+                        CURSOR                                          00290007
+                  END-EXEC.                                             00300007
+         PROCESS-SCREEN.                                                00350008
+               IF EIBAID NOT = DFHENTER                                 00351008
+                     EXEC CICS RETURN                                   00352008
+                         TRANSID('6015')                                00353008
+                         COMMAREA(WS-COMMAREA)                          00354008
+                         LENGTH(2)                                      00355008
+                      END-EXEC                                          00356008
+                END-IF                                                  00357008
+                  EXEC CICS                                             00360004
+                   RECEIVE MAP('ENR160')                                00370000
+                       MAPSET('INS160M')                                00380000
+                       INTO(ENR160I)                                    00390007
+                  END-EXEC                                              00400008
+              MOVE UCLMIDI TO WS-CLAIM-NO                               00451007
+              MOVE UPLCYNI TO WS-POLICY-NO                              00452008
+              MOVE UAMTI TO WS-CLAIM-AMOUNT                             00454008
+              MOVE 'P' TO WS-CLAIM-PSTATUS                              00455008
+                    EXEC CICS WRITE                                     00640004
+                          FILE('CLMK')                                  00650007
+                          FROM(WS-CLAIM-REC)                            00660008
+                          RIDFLD(WS-CLAIM-NO)                           00670007
+                          KEYLENGTH(10)                                 00680008
+                    END-EXEC.                                           00690004
+                    MOVE 'RECORD ADDED' TO PMSG1O                       00691007
+                    EXEC CICS SEND                                      00692007
+                        MAP('ENR160')                                   00693007
+                        MAPSET('INS160M')                               00694007
+                        FROM(ENR160O)                                   00695007
+                    END-EXEC.                                           00696007
+                  EXEC CICS RETURN                                      00697008
+                       TRANSID('6015')                                  00698008
+                       COMMAREA(WS-COMMAREA)                            00699008
+                       LENGTH(2)                                        00700008
+                    END-EXEC.                                           00710008
+
